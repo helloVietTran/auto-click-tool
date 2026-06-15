@@ -1,7 +1,8 @@
 const config = {
   username: "832375966",
   password: "123456789",
-  region: "Vietnam+", // Số HK thì dùng: Hong Kong SAR China
+  region: "Vietnam+",
+  //region: "Hong Kong SAR China",
   title: "TimeDealer",
   message: `
     You’ve tried WhatsApp groups, many platforms but found no good deals?❌

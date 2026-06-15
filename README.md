@@ -74,16 +74,60 @@ auto-post-tool/
 
 ## 🚀 Chạy tool
 
-Mở Command Prompt (PowerShell) trong thư mục `auto-post-tool`, gõ:
+Có **3 cách** để cấu hình và chạy:
+
+### Cách 1: Dùng Command Line (đơn giản nhất)
+
+```
+node src/autoPost.js --username "0912345678" --password "mật_khẩu" --region "Vietnam+"
+```
+
+Có thể thêm các tùy chọn khác:
+```
+node src/autoPost.js ^
+  --username "0912345678" ^
+  --password "mật_khẩu" ^
+  --region "Vietnam+" ^
+  --title "Tiêu đề mới" ^
+  --message "Nội dung bài viết" ^
+  --image "ảnh_khác.jpeg" ^
+  --interval 15
+```
+
+### Cách 2: Dùng Environment Variables (POSIX)
+
+```powershell
+$env:USERNAME = "0912345678"
+$env:PASSWORD = "mật_khẩu"
+$env:REGION = "Vietnam+"
+$env:TITLE = "Tiêu đề mới"
+$env:IMAGE = "ảnh_khác.jpeg"
+$env:INTERVAL = "15"
+
+node src/autoPost.js
+```
+
+### Cách 3: Sửa file config.js (mặc định)
+
+Nếu không truyền CLI args hoặc env vars, tool sẽ dùng cấu hình trong `src/config.js`
 
 ```
 node src/autoPost.js
 ```
 
-Tool sẽ:
-- Đăng nhập tự động
-- Lên lịch 288 bài đăng (5 phút/1 bài)
-- Dừng lúc 12h trưa hôm sau
+---
+
+## ⏱️ Các tham số
+
+| Tham số | Kiểu | Mặc định | Mô tả |
+|--------|------|---------|-------|
+| `--username` | Text | config.js | Số điện thoại TimeDealer |
+| `--password` | Text | config.js | Mật khẩu |
+| `--region` | Text | "Vietnam+" | Khu vực ("Hong Kong SAR China", v.v) |
+| `--title` | Text | config.js | Tiêu đề bài viết |
+| `--message` | Text | config.js | Nội dung bài viết |
+| `--image` | Text | "content_img.jpeg" | Tên file ảnh trong thư mục `src/` |
+| `--interval` | Số | 15 | Khoảng thời gian giữa các bài (phút) |
 
 ---
 
