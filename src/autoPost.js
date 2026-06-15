@@ -4,7 +4,47 @@ const path = require('path');
 
 const { config } = require('./config');
 
+const stateFilePath = path.join(__dirname, 'state.json');
+
+function getLastScheduledTime() {
+  if (fs.existsSync(stateFilePath)) {
+    try {
+      const data = fs.readFileSync(stateFilePath, 'utf8');
+      const parsed = JSON.parse(data);
+      if (parsed.lastTime) {
+        return new Date(parsed.lastTime);
+      }
+    } catch (e) {
+      console.error('[!] Lỗi đọc file state.json, sẽ khởi tạo mốc thời gian mới.');
+    }
+  }
+  return null;
+}
+
+function saveLastTime(dateObj) {
+  const data = { lastTime: dateObj ? dateObj.toISOString() : null };
+  fs.writeFileSync(stateFilePath, JSON.stringify(data, null, 2), 'utf8');
+}
+
 (async () => {
+  let scheduledTime = getLastScheduledTime();
+  
+  if (scheduledTime) {
+    console.log(`[➔] Tiếp tục tiến trình. Mốc thời gian đã lên lịch thành công gần nhất: ${scheduledTime.toLocaleString()}`);
+  } else {
+
+    scheduledTime = new Date();
+    scheduledTime.setMinutes(Math.round(scheduledTime.getMinutes() / 5) * 5);
+    scheduledTime.setSeconds(0);
+    scheduledTime.setMilliseconds(0);
+    console.log(`[+] Khởi tạo chu kỳ mới từ mốc thời gian hiện tại: ${scheduledTime.toLocaleString()}`);
+  }
+
+  const stopTime = new Date();
+  stopTime.setDate(stopTime.getDate() + 1);
+  stopTime.setHours(12, 0, 0, 0);
+  console.log(`[+] Mốc chặn dừng tool cố định: ${stopTime.toLocaleString()}`);
+
   const browser = await chromium.launch({ headless: false });
   const context = await browser.newContext({ locale: 'en-US' });
   const page = await context.newPage();
@@ -38,25 +78,20 @@ const { config } = require('./config');
     await headerCheckbox.waitFor({ state: 'visible' });
     await headerCheckbox.click();
 
-    let scheduledTime = new Date();
-    scheduledTime.setMinutes(Math.round(scheduledTime.getMinutes() / 5) * 5);
-    scheduledTime.setSeconds(0);
-    scheduledTime.setMilliseconds(0);
-
-    // dừng tool vào ngày mai
-    const stopTime = new Date();
-    stopTime.setDate(stopTime.getDate() + 1);
-    stopTime.setHours(12, 0, 0, 0);
-
     const imagePath = path.join(__dirname, 'content_img.jpeg');
+    let loopCount = 1;
 
-    for (let i = 0; i < 288; i++) {
-      console.log(`[+] Bắt đầu lên lịch lần thứ ${i + 1}...`);
+    while (true) {
       scheduledTime.setMinutes(scheduledTime.getMinutes() + 5); 
+
       if (scheduledTime >= stopTime) {
-        console.log(`[-] 12h dừng tool. Tool tự động dừng ở lần thứ ${i + 1}.`);
+        console.log(`[-] Thời gian lên lịch (${scheduledTime.toLocaleString()}) đã đạt/vượt mốc giới hạn 12h trưa hôm sau.`);
+        console.log(`[✓] Hoàn thành kế hoạch. Tự động xóa file trạng thái cũ.`);
+        saveLastTime(null);
         break; 
       }
+
+      console.log(`[+] Đang xử lý bài đăng thứ ${loopCount} (Dự kiến phát: ${scheduledTime.toLocaleString()})...`);
 
       // 4. Mở Compose và điền nội dung
       const composeBtn = page.locator('button.rt-Button:has-text("Compose")');
@@ -118,7 +153,6 @@ const { config } = require('./config');
       await okBtn.waitFor({ state: 'visible' });
       await okBtn.click();
 
-      // 12. Xác nhận gửi trên Modal thông báo
       await page.waitForSelector('span.rt-Text:has-text("Confirm schedule send?")', { state: 'visible', timeout: 10000 });
 
       const continueBtn = page.locator('button:has-text("Continue")');
@@ -129,6 +163,10 @@ const { config } = require('./config');
       await page.waitForTimeout(5000); 
 
       console.log(`[+] Đã đặt lịch thành công: Lần phát tiếp theo vào ${h12}:${m < 10 ? '0' + m : m} ${ampm} ngày ${dateVal}`);
+      
+      saveLastTime(scheduledTime);
+      
+      loopCount++;
     }
 
   } catch (error) {
